@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Local data & templates (Strict Privacy - never commit local voice vectors)
+.whistle_data/
+.vistle_data/
+*.tmp
+*.log
+
+# PyInstaller / Build artifacts
+build/
+dist/
+*.spec
+
+# IDE & Editor artifacts
+.vscode/
+.idea/
+*.sln
+*.csproj
+bin/
+obj/
+
+# Testing scratch
+.pytest_cache/

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vistle</title>
+  <style>
+    /*
+      VISTLE — UNSLOPPED DESKTOP INTERFACE
+      Strict adherence to Wispr Flow & Linear minimalism:
+      - Zero marketing cards, zero fake stat gauges
+      - Real utility: Triggers + Activity timeline (Wispr Flow Image 6 match)
+      - Restrained palette, natural whitespace, zero glowing gradients
+    */
+    :root {
+      --bg: #111215;
+      --sidebar: #0d0e10;
+      --surface: #17181c;
+      --surface-hover: #1c1d22;
+      --border: #23252a;
+      --border-subtle: #1c1d22;
+      
+      --text: #f0f1f4;
+      --text-muted: #727582;
+      --text-dim: #444752;
+
+      --accent: #ffffff;
+      --indicator: #e2e4e9;
+      --red: #ef4444;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Left Sidebar Rail — exactly matching Wispr Flow (Image 6) */
+    .sidebar {
+      width: 52px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+    }
+
+    .nav-icons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .nav-item {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.1s, background 0.1s;
+    }
+
+    .nav-item:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .nav-item.active {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    /* Main Window Layout */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Window Header */
+    .header {
+      height: 56px;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--indicator);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-new {
+      background: var(--text);
+      color: #000;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+
+    .btn-new:hover {
+      opacity: 0.9;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      padding: 28px;
+      overflow-y: auto;
+      max-width: 860px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Trigger Card List */
+    .trigger-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.15s;
+    }
+
+    .trigger-card:hover {
+      border-color: #2e3138;
+    }
+
+    .trigger-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .trigger-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .trigger-phrase {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .trigger-phrase strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .trigger-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .keycap-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .keycap {
+      background: #111216;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 7px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Switch */
+    .switch {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #252830;
+      border-radius: 20px;
+      transition: background 0.15s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background: var(--text);
+      border-radius: 50%;
+      transition: transform 0.15s;
+    }
+
+    .switch input:checked + .slider {
+      background: var(--text);
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(16px);
+      background: #000;
+    }
+
+    /* Activity Timeline (Inspired by Wispr Flow's History View in Image 6) */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .timeline-row {
+      background: var(--surface);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      transition: background 0.1s;
+    }
+
+    .timeline-row:hover {
+      background: var(--surface-hover);
+    }
+
+    .timeline-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .timeline-time {
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      width: 60px;
+    }
+
+    .timeline-action {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .timeline-detail {
+      color: var(--text-muted);
+    }
+
+    .timeline-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    /* Calibration Dialog (Clean, minimal, no slop) */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dialog {
+      width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .dialog-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .dialog-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Radar Canvas (Minimalist, Apple-style dotted circle from Image 3) */
+    .radar-svg {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 20px;
+    }
+
+    .radar-dot {
+      fill: #27282e;
+      transition: fill 0.25s ease;
+    }
+
+    .radar-dot.lit {
+      fill: var(--text);
+    }
+
+    .radar-dot.complete {
+      fill: var(--green);
+    }
+
+    .progress-text {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .btn-record {
+      background: var(--text);
+      color: #000;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.1s;
+    }
+
+    .btn-record:hover {
+      opacity: 0.9;
+    }
+
+    .btn-record.recording {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar (Matching Wispr Flow) -->
+  <aside class="sidebar">
+    <div class="brand-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+      </svg>
+    </div>
+    <div class="nav-icons">
+      <div class="nav-item active" title="Triggers">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+      </div>
+      <div class="nav-item" onclick="openDialog()" title="Calibrate">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main View -->
+  <main class="main">
+    <header class="header">
+      <div class="header-title">
+        <span class="status-dot"></span>
+        <span>Vistle</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-new" onclick="openDialog()">+ Add Trigger</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Voice Triggers -->
+      <div class="section-label">Voice Triggers</div>
+      <div class="trigger-card">
+        <div class="trigger-info">
+          <div class="trigger-name">Open Wispr Flow</div>
+          <div class="trigger-phrase">Wake phrase: <strong>"Hey Wispr"</strong></div>
+        </div>
+        <div class="trigger-right">
+          <div class="keycap-row">
+            <span class="keycap">Ctrl</span>
+            <span class="keycap">Win</span>
+            <span class="keycap">Space</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Activity Log (Wispr Flow style) -->
+      <div class="section-label">Recent Activity</div>
+      <div class="timeline">
+        <div class="timeline-row">
+          <div class="timeline-left">
+            <span class="timeline-time">12:10 AM</span>
+            <span class="timeline-action">Triggered Wispr Flow</span>
+            <span class="timeline-detail">Spoke "Hey Wispr"</span>
+          </div>
+          <span class="timeline-badge">38ms</span>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-left">
+            <span class="timeline-time">11:42 PM</span>
+            <span class="timeline-action">Triggered Wispr Flow</span>
+            <span class="timeline-detail">Spoke "Hey Wispr"</span>
+          </div>
+          <span class="timeline-badge">41ms</span>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-left">
+            <span class="timeline-time">11:15 PM</span>
+            <span class="timeline-action">Listening Resumed</span>
+            <span class="timeline-detail">Wispr window dismissed</span>
+          </div>
+          <span class="timeline-badge">0ms</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Minimalist Calibration Modal -->
+  <div id="modal" class="modal-overlay">
+    <div class="dialog">
+      <div class="dialog-title">Calibrate Phrase</div>
+      <div class="dialog-desc">Say "Hey Wispr" 3 times naturally at your normal speaking distance.</div>
+
+      <!-- Concentric Radar (Apple-style discrete dots from Image 3) -->
+      <svg id="radarSvg" class="radar-svg" viewBox="0 0 160 160"></svg>
+
+      <div id="progressText" class="progress-text">Sample 0 of 3</div>
+
+      <button id="btnRecord" class="btn-record" onclick="stepCalibration()">
+        Record Sample 1
+      </button>
+
+      <div class="dialog-actions">
+        <button class="btn-secondary" onclick="closeDialog()">Cancel</button>
+        <button id="btnSave" class="btn-secondary" style="color: var(--text); display: none;" onclick="saveCalibration()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let step = 0;
+    const totalSteps = 3;
+
+    function renderDots(currentStep) {
+      const svg = document.getElementById('radarSvg');
+      svg.innerHTML = '';
+      const rings = [
+        { radius: 32, count: 14, size: 2.2 },
+        { radius: 48, count: 20, size: 2.0 },
+        { radius: 64, count: 26, size: 1.8 }
+      ];
+      const totalDots = 14 + 20 + 26;
+      const litCount = Math.round((currentStep / totalSteps) * totalDots);
+      let idx = 0;
+
+      rings.forEach(ring => {
+        for (let i = 0; i < ring.count; i++) {
+          const angle = (i / ring.count) * 2 * Math.PI - Math.PI / 2;
+          const cx = 80 + ring.radius * Math.cos(angle);
+          const cy = 80 + ring.radius * Math.sin(angle);
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', cx);
+          circle.setAttribute('cy', cy);
+          circle.setAttribute('r', ring.size);
+          circle.setAttribute('class', idx < litCount ? (currentStep === totalSteps ? 'radar-dot complete' : 'radar-dot lit') : 'radar-dot');
+          svg.appendChild(circle);
+          idx++;
+        }
+      });
+    }
+
+    function openDialog() {
+      step = 0;
+      updateModalUI();
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeDialog() {
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    function stepCalibration() {
+      if (step >= totalSteps) return;
+      const btn = document.getElementById('btnRecord');
+      btn.classList.add('recording');
+      btn.innerText = 'Listening... Speak now';
+
+      setTimeout(() => {
+        step++;
+        btn.classList.remove('recording');
+        updateModalUI();
+      }, 700);
+    }
+
+    function updateModalUI() {
+      renderDots(step);
+      const text = document.getElementById('progressText');
+      const btn = document.getElementById('btnRecord');
+      const save = document.getElementById('btnSave');
+
+      if (step < totalSteps) {
+        text.innerText = `Sample ${step} of ${totalSteps}`;
+        btn.innerText = `Record Sample ${step + 1}`;
+        btn.style.display = 'block';
+        save.style.display = 'none';
+      } else {
+        text.innerHTML = `<span style="color: var(--text);">Calibration Complete</span>`;
+        btn.style.display = 'none';
+        save.style.display = 'block';
+      }
+    }
+
+    function saveCalibration() {
+      closeDialog();
+    }
+
+    renderDots(0);
+  </script>
+</body>
+</html>

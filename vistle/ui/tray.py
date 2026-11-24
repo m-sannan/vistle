@@ -1,5 +1,4 @@
 import threading
-import tkinter as tk
 from PIL import Image, ImageDraw
 import pystray
 from pystray import MenuItem as item
@@ -33,8 +32,7 @@ class TrayApp:
         )
 
         self._icon: pystray.Icon = None
-        self._enrollment_open = False
-        self._settings_open = False
+        self._ui_ready = False
 
     def _create_icon_image(self, active: bool = True) -> Image.Image:
         """Draws a clean, minimalist tray icon with an active emerald dot."""
@@ -93,45 +91,19 @@ class TrayApp:
             else:
                 self.engine.start()
 
+    def _reload(self, *_args):
+        self.config = VistleConfig.load()
+        self.engine.reload_phrases()
+
     def _open_enrollment(self, icon=None, item=None):
-        if self._enrollment_open:
-            return
-
-        def show():
-            self._enrollment_open = True
-            try:
-                def on_saved(phrase):
-                    self.engine.reload_phrases()
-                win = EnrollmentWindow(None, self.audio_capture, self.config, on_phrase_saved=on_saved)
-                win.root.lift()
-                win.root.attributes('-topmost', True)
-                win.root.after_idle(win.root.attributes, '-topmost', False)
-                win.root.focus_force()
-                win.root.mainloop()
-            finally:
-                self._enrollment_open = False
-
-        threading.Thread(target=show, daemon=True).start()
+        from vistle.ui.host import reveal
+        if not reveal("enroll"):
+            print("[Vistle] Window is not ready yet.")
 
     def _open_settings(self, icon=None, item=None):
-        if self._settings_open:
-            return
-
-        def show():
-            self._settings_open = True
-            try:
-                def on_changed():
-                    self.engine.reload_phrases()
-                win = SettingsWindow(None, self.audio_capture, self.config, on_config_changed=on_changed)
-                win.root.lift()
-                win.root.attributes('-topmost', True)
-                win.root.after_idle(win.root.attributes, '-topmost', False)
-                win.root.focus_force()
-                win.root.mainloop()
-            finally:
-                self._settings_open = False
-
-        threading.Thread(target=show, daemon=True).start()
+        from vistle.ui.host import reveal
+        if not reveal("hub"):
+            print("[Vistle] Window is not ready yet.")
 
     def _show_about(self, icon, item):
         msg = (
@@ -148,6 +120,11 @@ class TrayApp:
         self.engine.stop()
         self.audio_capture.stop()
         self.action_executor.stop()
+        try:
+            from vistle.ui.host import shutdown
+            shutdown()
+        except Exception:
+            pass
         icon.stop()
 
     def run(self):
@@ -168,12 +145,30 @@ class TrayApp:
             menu=menu
         )
 
+        self.enrollment = EnrollmentWindow(
+            None,
+            self.audio_capture,
+            self.config,
+            on_phrase_saved=self._reload,
+            on_config_changed=self._reload,
+        )
+        self.settings = SettingsWindow(
+            None,
+            self.audio_capture,
+            self.config,
+            on_config_changed=self._reload,
+            enrollment=self.enrollment,
+        )
+
         if self.config.start_listening_on_launch:
             self.engine.start()
 
-        if len(self.config.phrases) == 0:
+        start_view = "enroll" if len(self.config.phrases) == 0 else "hub"
+        if start_view == "enroll":
             print("[Vistle] No phrases enrolled yet. Opening calibration...")
-            self._open_enrollment()
 
+        threading.Thread(target=self._icon.run, daemon=True).start()
         print("[Vistle] Running in system tray.")
-        self._icon.run()
+
+        from vistle.ui.host import launch
+        launch(self.enrollment, self.settings, start_view="hub" if start_view == "hub" else "enroll")

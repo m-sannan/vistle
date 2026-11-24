@@ -36,7 +36,7 @@ Unlike cloud voice assistants, Vistle is built with provable, mathematically enf
 ## 🚀 Quick Start
 
 ### 1. Requirements & Setup
-- Windows 10 or 11 (64-bit)
+- Windows 10 or 11 (64-bit). The window uses Edge WebView2, which Windows 11 already has.
 - Python 3.10+ (or standalone executable)
 
 ```bash
@@ -137,10 +137,12 @@ Vistle/
 │   └── ui/
 │       ├── theme.py        # Wispr Flow warm light design tokens
 │       ├── tray.py         # System tray application (pystray)
-│       ├── enrollment_gui.py # Voice calibration dialog with dotted radar
-│       └── settings_gui.py   # Dashboard with active triggers and keycaps
+│       ├── enrollment_gui.py # Calibration logic the page and the harness share
+│       ├── settings_gui.py   # List, toggle, delete, and edit triggers
+│       ├── host.py           # Edge WebView2 window
+│       └── assets/app.html   # Warm-light hub and calibration
 ├── vistle_light_preview.html # Modern Wispr Flow warm light UI design reference
-├── test_harness.py         # Autonomous 16-item PRD verification harness
+├── test_harness.py         # Autonomous 21-item PRD verification harness
 ├── main.py                 # Single-instance application entry point
 ├── run.bat                 # One-click launcher
 ├── build_exe.bat           # Standalone executable compiler

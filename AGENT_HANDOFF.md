@@ -114,10 +114,10 @@ python test_harness.py
 
 ## 6. Honest Technical Frontiers (Recommendations for Next Agent)
 
-1. **GUI Modernization (Edge WebView2 vs. Tkinter):**
-   - *Current State:* Tkinter fallback UI works reliably, but lacks native Windows 11 subpixel anti-aliasing, rounded container cards, and fluid 60fps animations.
-   - *Deliverable Ready on Disk:* [`vistle_light_preview.html`](file:///C:/Users/ADMIN/Downloads/Whistle/vistle_light_preview.html) already implements the exact Wispr Flow warm light design system.
-   - *Next Step:* Host `vistle_light_preview.html` via `pywebview` or Microsoft Edge Chromium `--app` mode (`msedge.exe --app="http://localhost:..."`) for a 100% native Wispr Flow aesthetic with zero Electron bloat.
+1. **GUI (Edge WebView2, already in place):**
+   - The tray opens one native window (`vistle/ui/host.py` + `vistle/ui/assets/app.html`). On Windows it uses Edge Chromium via `pywebview`. Closing the window hides it; Exit destroys it.
+   - The page calls `start_enrollment`, `stop_sample`, `save_phrase`, `list_phrases`, `toggle_phrase`, `delete_phrase`.
+   - `EnrollmentWindow` still exposes `_on_enrollment_complete`, `_save_phrase`, `btn_save`, `ent_name`, and `ent_spoken` so PRD-16 can run headless without opening WebView. Do not make `EnrollmentWindow.__init__` start the webview loop.
 
 2. **Cadence (do not put the 0.50× length gate back):**
    - People enroll slowly. Refusing anything under half that length is why the phrase only hit when spoken slowly.

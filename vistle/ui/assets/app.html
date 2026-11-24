@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vistle</title>
+  <style>
+    :root {
+      --bg-canvas: #f7f5f0;
+      --bg-sidebar: #ede9e1;
+      --surface-card: #ffffff;
+      --surface-hover: #f4efe6;
+      --surface-inset: #ede8df;
+      --border-subtle: #e4ded4;
+      --border-hover: #cfc8bb;
+      --text-primary: #1f1e1b;
+      --text-secondary: #757168;
+      --text-muted: #a09b91;
+      --accent-primary: #1f1e1b;
+      --accent-white: #ffffff;
+      --accent-green: #2d7a58;
+      --accent-red: #dc4437;
+      --accent-amber: #d9822b;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      --shadow-card: 0 2px 10px rgba(31, 30, 27, 0.03), 0 1px 2px rgba(31, 30, 27, 0.02);
+      --shadow-float: 0 12px 36px rgba(31, 30, 27, 0.08), 0 4px 12px rgba(31, 30, 27, 0.04);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+      user-select: none;
+    }
+    .sidebar {
+      width: 56px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+    .brand-mark {
+      width: 34px; height: 34px;
+      background: var(--accent-primary);
+      color: var(--accent-white);
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px;
+    }
+    .nav-btn {
+      width: 38px; height: 38px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .nav-btn.active { color: var(--accent-primary); background: var(--surface-card); box-shadow: 0 1px 3px rgba(31, 30, 27, 0.06); }
+    .workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      height: 60px; padding: 0 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .topbar-title-wrap { display: flex; align-items: baseline; gap: 12px; }
+    .app-title { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; }
+    .app-subtitle { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+    .topbar-status { display: flex; align-items: center; gap: 14px; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; background: var(--surface-card);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-pill);
+      font-size: 11px; font-weight: 600; box-shadow: var(--shadow-card);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-green); }
+    .btn-pill-action {
+      background: var(--accent-primary); color: var(--accent-white);
+      border: none; border-radius: var(--radius-pill);
+      padding: 7px 16px; font-size: 12px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 2px 6px rgba(31, 30, 27, 0.12);
+    }
+    .btn-pill-action:disabled { background: var(--surface-inset); color: var(--text-muted); box-shadow: none; cursor: default; }
+    .btn-pill-action:not(:disabled):hover { background: #33322d; }
+    .content-grid {
+      flex: 1; padding: 24px 28px; overflow-y: auto;
+      display: grid; grid-template-columns: 1fr 280px; gap: 24px;
+    }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px;
+    }
+    .triggers-list { display: flex; flex-direction: column; gap: 12px; }
+    .trigger-card, .info-card, .pill-preview-card, .empty-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+    }
+    .trigger-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .trigger-card:hover { border-color: var(--border-hover); }
+    .trigger-header, .trigger-specs, .trigger-footer { display: flex; align-items: center; justify-content: space-between; }
+    .trigger-info { display: flex; align-items: center; gap: 10px; }
+    .app-icon-badge {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--surface-inset);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .trigger-title { font-size: 14px; font-weight: 600; }
+    .trigger-subtitle { font-size: 11px; color: var(--text-secondary); }
+    .trigger-toggle {
+      width: 38px; height: 22px; background: var(--accent-primary);
+      border-radius: var(--radius-pill); position: relative; cursor: pointer; border: none; flex-shrink: 0;
+    }
+    .trigger-toggle::after {
+      content: ''; position: absolute; top: 2px; right: 2px;
+      width: 18px; height: 18px; background: white; border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .trigger-toggle.off { background: var(--surface-inset); border: 1px solid var(--border-hover); }
+    .trigger-toggle.off::after { right: auto; left: 2px; }
+    .trigger-specs {
+      background: var(--bg-canvas); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 10px 14px; gap: 12px;
+    }
+    .spoken-phrase { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .spoken-quote { font-weight: 600; }
+    .keycap-chord { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+    .keycap {
+      background: var(--surface-card); border: 1px solid var(--border-subtle); border-bottom-width: 2px;
+      border-radius: var(--radius-sm); padding: 3px 7px;
+      font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; font-weight: 600;
+    }
+    .keycap-plus { font-size: 11px; color: var(--text-muted); }
+    .trigger-footer { font-size: 11px; color: var(--text-secondary); }
+    .trigger-actions { display: flex; gap: 8px; }
+    .btn-text-action {
+      background: none; border: none; font-size: 11px; font-weight: 600;
+      color: var(--text-secondary); cursor: pointer; padding: 2px 4px; border-radius: 4px;
+    }
+    .btn-text-action:hover { color: var(--text-primary); background: var(--surface-inset); }
+    .btn-text-action.danger { color: var(--accent-red); }
+    .right-sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .info-card, .pill-preview-card { padding: 18px; }
+    .info-card-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .info-card-desc { font-size: 12px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 14px; }
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-top: 1px solid var(--border-subtle); font-size: 12px;
+    }
+    .stat-label { color: var(--text-secondary); }
+    .stat-val { font-weight: 600; }
+    .pill-preview-card { text-align: center; }
+    .floating-pill {
+      margin: 14px auto 8px; background: var(--accent-primary); color: white;
+      border-radius: var(--radius-pill); padding: 8px 18px;
+      display: inline-flex; align-items: center; gap: 12px; box-shadow: var(--shadow-float);
+    }
+    .wave-bars { display: flex; align-items: center; gap: 2.5px; height: 16px; }
+    .wave-bar { width: 2px; background: white; border-radius: 2px; animation: wave 1s ease-in-out infinite; }
+    .wave-bar:nth-child(1) { height: 6px; } .wave-bar:nth-child(2) { height: 12px; }
+    .wave-bar:nth-child(3) { height: 16px; } .wave-bar:nth-child(4) { height: 10px; }
+    .wave-bar:nth-child(5) { height: 5px; }
+    @keyframes wave { 0%, 100% { transform: scaleY(0.4); opacity: 0.6; } 50% { transform: scaleY(1); opacity: 1; } }
+    .pill-text { font-size: 12px; font-weight: 600; }
+    .empty-card { padding: 28px 20px; text-align: center; color: var(--text-secondary); font-size: 13px; }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(31, 30, 27, 0.4); backdrop-filter: blur(4px);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .dialog-card {
+      width: 460px; max-height: calc(100vh - 48px); overflow: auto;
+      background: var(--surface-card); border: 1px solid var(--border-subtle);
+      border-radius: 20px; padding: 28px; box-shadow: var(--shadow-float); text-align: center;
+    }
+    .dialog-header { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .dialog-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 16px; }
+    .radar-svg { width: 150px; height: 150px; margin: 0 auto 8px; display: block; }
+    .radar-dot { fill: #e4ded4; transition: fill 0.3s ease; }
+    .radar-dot.lit { fill: var(--accent-primary); }
+    .radar-dot.complete { fill: var(--accent-green); }
+    .radar-dot.pulse { fill: var(--accent-red); }
+    .progress-val { font-size: 26px; font-weight: 700; }
+    .progress-sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin-bottom: 12px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field.wide { grid-column: 1 / -1; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+    .field input {
+      background: var(--surface-inset); border: 1px solid var(--border-subtle);
+      border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--text-primary);
+      font-family: inherit; outline: none; user-select: text;
+    }
+    .field input:focus { border-color: var(--accent-primary); background: white; }
+    .field input.mono { font-family: "Cascadia Code", Consolas, monospace; }
+    .btn-record-sample {
+      width: 100%; background: var(--accent-primary); color: white; border: none;
+      border-radius: var(--radius-pill); padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-record-sample.recording { background: var(--accent-red); }
+    .btn-record-sample:disabled { background: var(--surface-inset); color: var(--text-muted); cursor: default; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn-cancel {
+      background: none; border: none; font-size: 13px; font-weight: 600;
+      color: var(--text-secondary); cursor: pointer; padding: 8px 14px; border-radius: var(--radius-pill);
+    }
+    .btn-cancel:hover { background: var(--surface-inset); color: var(--text-primary); }
+    .toast {
+      position: fixed; bottom: 18px; left: 74px; right: 18px;
+      background: var(--accent-primary); color: white; border-radius: var(--radius-pill);
+      padding: 10px 16px; font-size: 12px; font-weight: 600; display: none; z-index: 20;
+    }
+    .toast.show { display: block; }
+    .edit-row { display: none; gap: 6px; align-items: center; }
+    .edit-row.open { display: flex; }
+    .edit-row input {
+      flex: 1; background: var(--surface-inset); border: 1px solid var(--border-subtle);
+      border-radius: 8px; padding: 6px 8px; font-size: 12px; font-family: Consolas, monospace; color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-mark">V</div>
+    <div class="nav-btn active" title="Triggers">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+    </div>
+  </aside>
+  <main class="workspace">
+    <header class="topbar">
+      <div class="topbar-title-wrap">
+        <h1 class="app-title">Voice Triggers</h1>
+        <span class="app-subtitle">On this device</span>
+      </div>
+      <div class="topbar-status">
+        <div class="status-pill"><span class="status-dot"></span><span>Engine listening</span></div>
+        <button class="btn-pill-action" id="btnAdd" type="button">+ Add trigger</button>
+      </div>
+    </header>
+    <div class="content-grid">
+      <section>
+        <div class="section-label" id="listLabel">Active triggers</div>
+        <div class="triggers-list" id="triggerList"></div>
+      </section>
+      <aside class="right-sidebar">
+        <div class="pill-preview-card">
+          <div class="section-label" style="margin-bottom: 4px;">While the target app is open</div>
+          <div class="floating-pill">
+            <div class="wave-bars"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+            <span class="pill-text">Listening paused</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 8px;">The mic is handed to that app, then Vistle resumes.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-title">Nothing leaves this PC</div>
+          <div class="info-card-desc">The recording is turned into numbers in memory and thrown away. Only those numbers are kept, and they cannot be played back.</div>
+          <div class="stat-row"><span class="stat-label">Match</span><span class="stat-val">Your voice, fast or slow</span></div>
+          <div class="stat-row"><span class="stat-label">Audio stored</span><span class="stat-val" style="color: var(--accent-green);">None</span></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="dialog-card">
+      <h2 class="dialog-header">Voice calibration</h2>
+      <p class="dialog-desc">Say the phrase three times, the way you will actually say it. Fast or slow both count.</p>
+      <svg id="radarSvg" class="radar-svg" viewBox="0 0 170 170"></svg>
+      <div id="progressPercent" class="progress-val">0%</div>
+      <div id="progressDesc" class="progress-sub">0 of 3 samples calibrated</div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="fldName">Label</label>
+          <input id="fldName" value="Open Wispr Flow" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="fldSpoken">You say</label>
+          <input id="fldSpoken" value="Hey Wispr" autocomplete="off">
+        </div>
+        <div class="field wide">
+          <label for="fldHotkey">Shortcut it presses</label>
+          <input id="fldHotkey" class="mono" value="ctrl+windows+space" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <button id="btnRecord" class="btn-record-sample" type="button">Record sample 1</button>
+      <div class="dialog-actions">
+        <button class="btn-cancel" id="btnCancel" type="button">Cancel</button>
+        <button class="btn-pill-action" id="btnSave" type="button" disabled>Save trigger</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const TOTAL = 3;
+    let api = null;
+    let recording = false;
+    let sampleCount = 0;
+    let ready = false;
+    let pulseTimer = null;
+
+    function rings() {
+      return [
+        { radius: 34, count: 16, size: 2.4 },
+        { radius: 52, count: 22, size: 2.2 },
+        { radius: 70, count: 28, size: 2.0 }
+      ];
+    }
+
+    function renderRadar(step, pulsing) {
+      const svg = document.getElementById('radarSvg');
+      svg.innerHTML = '';
+      const spec = rings();
+      const totalDots = spec.reduce((n, r) => n + r.count, 0);
+      const litCount = Math.round((Math.min(step, TOTAL) / TOTAL) * totalDots);
+      let index = 0;
+      spec.forEach(ring => {
+        for (let i = 0; i < ring.count; i++) {
+          const angle = (i / ring.count) * 2 * Math.PI - Math.PI / 2;
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', 85 + ring.radius * Math.cos(angle));
+          circle.setAttribute('cy', 85 + ring.radius * Math.sin(angle));
+          circle.setAttribute('r', ring.size);
+          let cls = 'radar-dot';
+          if (index < litCount) cls = step >= TOTAL ? 'radar-dot complete' : 'radar-dot lit';
+          else if (pulsing && index % 2 === 0) cls = 'radar-dot pulse';
+          circle.setAttribute('class', cls);
+          svg.appendChild(circle);
+          index++;
+        }
+      });
+    }
+
+    function keycaps(spec) {
+      const parts = String(spec || '').split('+').map(s => s.trim()).filter(Boolean);
+      if (!parts.length) return '';
+      const label = (k) => {
+        const low = k.toLowerCase();
+        if (low === 'windows' || low === 'win') return 'Win';
+        if (low === 'ctrl') return 'Ctrl';
+        if (low === 'alt') return 'Alt';
+        if (low === 'shift') return 'Shift';
+        if (low === 'space') return 'Space';
+        return k.length === 1 ? k.toUpperCase() : k;
+      };
+      return parts.map((k, i) => {
+        const cap = `<span class="keycap">${label(k)}</span>`;
+        return i < parts.length - 1 ? cap + '<span class="keycap-plus">+</span>' : cap;
+      }).join('');
+    }
+
+    function toast(text) {
+      const el = document.getElementById('toast');
+      el.textContent = text;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove('show'), 2400);
+    }
+
+    function renderList(phrases) {
+      const list = document.getElementById('triggerList');
+      const label = document.getElementById('listLabel');
+      const items = phrases || [];
+      label.textContent = items.length ? `Active triggers (${items.length})` : 'Active triggers';
+      if (!items.length) {
+        list.innerHTML = '<div class="empty-card">No triggers yet. Add one and say it three times.</div>';
+        return;
+      }
+      list.innerHTML = items.map(p => `
+        <article class="trigger-card" data-id="${p.id}">
+          <div class="trigger-header">
+            <div class="trigger-info">
+              <div class="app-icon-badge">🎙</div>
+              <div>
+                <div class="trigger-title"></div>
+                <div class="trigger-subtitle"></div>
+              </div>
+            </div>
+            <button class="trigger-toggle ${p.enabled ? '' : 'off'}" type="button" data-act="toggle" title="${p.enabled ? 'On' : 'Paused'}"></button>
+          </div>
+          <div class="trigger-specs">
+            <div class="spoken-phrase"><span>Say</span><span class="spoken-quote"></span></div>
+            <div class="keycap-chord">${keycaps(p.hotkey_spec)}</div>
+          </div>
+          <div class="edit-row" data-edit-row>
+            <input data-hotkey value="" spellcheck="false" autocomplete="off">
+            <button class="btn-text-action" type="button" data-act="save-key">Save</button>
+          </div>
+          <div class="trigger-footer">
+            <span>${p.enabled ? 'Listening for this phrase' : 'Paused'} · ${Number(p.threshold).toFixed(2)}</span>
+            <div class="trigger-actions">
+              <button class="btn-text-action" type="button" data-act="edit">Edit shortcut</button>
+              <button class="btn-text-action danger" type="button" data-act="delete">Delete</button>
+            </div>
+          </div>
+        </article>
+      `).join('');
+      [...list.querySelectorAll('.trigger-card')].forEach((card, i) => {
+        const p = items[i];
+        card.querySelector('.trigger-title').textContent = p.name || 'Trigger';
+        card.querySelector('.trigger-subtitle').textContent = p.enabled ? 'Will press the shortcut' : 'Turned off';
+        card.querySelector('.spoken-quote').textContent = '"' + (p.phrase || '') + '"';
+        card.querySelector('[data-hotkey]').value = p.hotkey_spec || '';
+      });
+    }
+
+    async function refresh() {
+      if (!api) return;
+      const res = await api.list_phrases();
+      renderList(res && res.phrases ? res.phrases : []);
+    }
+
+    function paintProgress() {
+      const pct = Math.round((sampleCount / TOTAL) * 100);
+      const percent = document.getElementById('progressPercent');
+      const desc = document.getElementById('progressDesc');
+      const save = document.getElementById('btnSave');
+      const record = document.getElementById('btnRecord');
+      percent.textContent = pct + '%';
+      percent.style.color = ready ? 'var(--accent-green)' : 'var(--text-primary)';
+      if (recording) {
+        desc.textContent = 'Listening… say “' + document.getElementById('fldSpoken').value.trim() + '”';
+        record.textContent = 'Stop';
+        record.classList.add('recording');
+        record.disabled = false;
+      } else if (ready) {
+        desc.textContent = 'Three takes saved. You can keep this trigger.';
+        record.textContent = 'Recorded';
+        record.classList.remove('recording');
+        record.disabled = true;
+      } else {
+        desc.textContent = sampleCount + ' of 3 samples calibrated';
+        record.textContent = 'Record sample ' + (sampleCount + 1);
+        record.classList.remove('recording');
+        record.disabled = false;
+      }
+      save.disabled = !ready;
+      renderRadar(sampleCount, recording);
+    }
+
+    async function openCalibration() {
+      sampleCount = 0;
+      ready = false;
+      recording = false;
+      if (api) {
+        try { await api.reset_enrollment(); } catch (e) {}
+      }
+      paintProgress();
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeCalibration() {
+      if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+
+    async function onRecord() {
+      if (!api) { toast('Open this from the Vistle tray app.'); return; }
+      const btn = document.getElementById('btnRecord');
+      btn.disabled = true;
+      try {
+        if (!recording) {
+          const res = await api.start_enrollment();
+          if (!res || res.ok === false) {
+            toast((res && res.error) || 'Could not start the microphone.');
+            return;
+          }
+          recording = true;
+          if (pulseTimer) clearInterval(pulseTimer);
+          pulseTimer = setInterval(() => renderRadar(sampleCount, true), 280);
+        } else {
+          const res = await api.stop_sample();
+          recording = false;
+          if (pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+          if (res) {
+            sampleCount = res.count || 0;
+            ready = !!res.ready;
+            if (res.message) toast(res.message);
+            if (res.ok === false && res.error && res.error !== 'Not recording') toast(res.error);
+          }
+        }
+      } catch (err) {
+        recording = false;
+        toast('The microphone did not answer.');
+      } finally {
+        paintProgress();
+      }
+    }
+
+    async function onSave() {
+      if (!api || !ready) return;
+      const name = document.getElementById('fldName').value.trim();
+      const spoken = document.getElementById('fldSpoken').value.trim();
+      const hotkey = document.getElementById('fldHotkey').value.trim();
+      if (!name || !spoken) { toast('Add a label and the phrase you say.'); return; }
+      const btn = document.getElementById('btnSave');
+      btn.disabled = true;
+      try {
+        const res = await api.save_phrase(name, spoken, hotkey || 'ctrl+windows+space');
+        if (!res || res.ok === false) {
+          toast((res && res.error) || 'Could not save.');
+          btn.disabled = false;
+          return;
+        }
+        closeCalibration();
+        await refresh();
+        toast('“' + name + '” is on.');
+      } catch (err) {
+        toast('Could not save.');
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('btnAdd').addEventListener('click', openCalibration);
+    document.getElementById('btnCancel').addEventListener('click', closeCalibration);
+    document.getElementById('btnRecord').addEventListener('click', onRecord);
+    document.getElementById('btnSave').addEventListener('click', onSave);
+
+    document.getElementById('fldHotkey').addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') return;
+      e.preventDefault();
+      const parts = [];
+      if (e.ctrlKey) parts.push('ctrl');
+      if (e.altKey) parts.push('alt');
+      if (e.shiftKey) parts.push('shift');
+      if (e.metaKey) parts.push('windows');
+      const key = e.key.toLowerCase();
+      if (!['control', 'alt', 'shift', 'meta'].includes(key)) {
+        parts.push(key === ' ' ? 'space' : key);
+      }
+      if (parts.length) e.target.value = parts.join('+');
+    });
+
+    document.getElementById('triggerList').addEventListener('click', async (e) => {
+      const card = e.target.closest('.trigger-card');
+      if (!card || !api) return;
+      const id = card.getAttribute('data-id');
+      const act = e.target.getAttribute('data-act');
+      if (act === 'toggle') {
+        const res = await api.toggle_phrase(id);
+        if (res && res.phrases) renderList(res.phrases);
+      } else if (act === 'delete') {
+        if (!confirm('Remove this trigger?')) return;
+        const res = await api.delete_phrase(id);
+        if (res && res.phrases) renderList(res.phrases);
+        else toast((res && res.error) || 'Could not delete.');
+      } else if (act === 'edit') {
+        card.querySelector('[data-edit-row]').classList.add('open');
+        card.querySelector('[data-hotkey]').focus();
+      } else if (act === 'save-key') {
+        const hotkey = card.querySelector('[data-hotkey]').value.trim();
+        const res = await api.update_phrase(id, '', hotkey, '');
+        if (res && res.phrases) renderList(res.phrases);
+        else toast((res && res.error) || 'Could not update.');
+      }
+    });
+
+    window.vistleShow = function (view) {
+      if (view === 'enroll') openCalibration();
+      else closeCalibration();
+      refresh();
+    };
+
+    async function boot() {
+      api = window.pywebview && window.pywebview.api;
+      renderRadar(0, false);
+      await refresh();
+      const view = new URLSearchParams(location.search).get('view');
+      if (view === 'enroll') openCalibration();
+    }
+
+    window.addEventListener('pywebviewready', boot);
+    renderRadar(0, false);
+  </script>
+</body>
+</html>

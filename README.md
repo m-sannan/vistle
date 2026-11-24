@@ -27,7 +27,7 @@ Unlike cloud voice assistants, Vistle is built with provable, mathematically enf
 
 - **Few-Shot Custom Calibration:** Train any custom phrase (*"Hey Wispr"*, *"Computer"*, *"Screenshot"*) in 3 quick takes without neural training or GPUs.
 - **39-Dimensional Dynamic Features:** Extracts 13 static MFCC cepstral coefficients + 13 velocity ($\Delta$) + 13 acceleration ($\Delta\Delta$) features to capture phonetic trajectory and eliminate false positive triggers.
-- **Elastic Tempo Timing:** Uses Sakoe-Chiba Dynamic Time Warping to warp natural variations in speech speed ($0.50\times - 1.75\times$).
+- **Natural speaking speed:** Enrollment can be slow and careful. Later you can say the phrase at a normal pace. Clicks and "sounds a bit like it" are still refused. Say it again the same way you enrolled only if you want to tighten the match, not because the engine demands it.
 - **Lifecycle Coordination & Mic Arbitration:** Automatically detects when target overlay windows (e.g. Wispr Flow's floating pill) open, safely pausing wake listening so the target application has exclusive, uninterrupted microphone access.
 - **Instant System Tray Daemon:** Sits in the Windows notification area using less than 25 MB of RAM and ~0% idle CPU.
 

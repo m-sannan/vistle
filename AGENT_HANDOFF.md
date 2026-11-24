@@ -44,7 +44,7 @@
                                  │ (Frames, 39) Feature Matrix
                                  ▼
                     ┌─────────────────────────┐
-                    │     WakeWordEngine      │ (0.50x – 1.75x Elastic Cadence Gate)
+                    │     WakeWordEngine      │ (natural tempo; clicks still rejected)
                     └────────────┬────────────┘
                                  │ Sakoe-Chiba Dynamic Time Warping
                                  ▼
@@ -119,9 +119,10 @@ python test_harness.py
    - *Deliverable Ready on Disk:* [`vistle_light_preview.html`](file:///C:/Users/ADMIN/Downloads/Whistle/vistle_light_preview.html) already implements the exact Wispr Flow warm light design system.
    - *Next Step:* Host `vistle_light_preview.html` via `pywebview` or Microsoft Edge Chromium `--app` mode (`msedge.exe --app="http://localhost:..."`) for a 100% native Wispr Flow aesthetic with zero Electron bloat.
 
-2. **Transitioning from Classical DTW to Streaming Neural KWS:**
-   - *Current State:* 39-D DTW Sakoe-Chiba provides fast, few-shot training without a GPU.
-   - *Recommendation:* For a public release requiring zero user calibration, integrate **`openWakeWord`** (ONNX Runtime, 100% local, $< 1\%$ CPU) to provide pre-trained, cadence-invariant wake phrases.
+2. **Cadence (do not put the 0.50× length gate back):**
+   - People enroll slowly. Refusing anything under half that length is why the phrase only hit when spoken slowly.
+   - `vistle/spotter.py` keeps the saved templates and the saved threshold. Clear matches fire at a natural speed. The old false-accept band (close, but not obvious) has to beat a time-reversed copy of the enrollment. A fast take whose timing features blew up is retried on the enrollment clock.
+   - Do not replace this with openWakeWord for custom phrases. That trainer writes audio and needs a fixed vocabulary. DTW stays the few-shot path.
 
 3. **macOS Target Porting:**
    - *Audio Capture:* `sounddevice` supports macOS CoreAudio out of the box.

@@ -5,18 +5,20 @@ from typing import List, Dict, Callable, Optional
 from vistle.audio import AudioCapture
 from vistle.config import VistleConfig, PhraseConfig
 from vistle.mfcc import MfccExtractor
-from vistle.dtw import dtw_distance
 from vistle.vad import VoiceActivityDetector
 from vistle.template_store import TemplateStore
+from vistle.spotter import evaluate as spot_phrase
 
 class WakeWordEngine:
     """
-    Continuous keyword-spotting engine with anti-false-positive multi-stage filtering:
-    1. VAD Utterance Segmentation
-    2. Strict Duration Ratio Check (rejects sentences, gaming talk, quick clicks)
-    3. Acoustic Energy Contour Check
-    4. MFCC + DTW Distance Matcher
-    Runs entirely on-device with zero audio storage.
+    On-device spotter.
+    1. VAD segments an utterance, keeping a short onset so fast phrases are intact.
+    2. Clicks and long stretches of speech are refused before matching.
+    3. Clear matches fire at a natural speed. Near misses have to beat the
+       time-reversed enrollment, which is what used to false-trigger.
+    4. A fast take that only looks bad because of timing is retried on the
+       enrollment clock.
+    Templates stay numerical. No audio is written.
     """
     def __init__(
         self,
@@ -86,9 +88,8 @@ class WakeWordEngine:
 
         print(f"[Vistle Engine] Heard utterance: {query_frames} frames (~{query_frames * 10}ms)")
 
-        # 2. Evaluate against all enabled phrases with duration gating
         best_match: Optional[PhraseConfig] = None
-        best_distance = float('inf')
+        best_distance = float("inf")
 
         with self._lock:
             enabled_phrases = [p for p in self.config.phrases if p.enabled and p.id in self.templates]
@@ -102,30 +103,16 @@ class WakeWordEngine:
         for phrase in enabled_phrases:
             phrase_templates = templates_snapshot.get(phrase.id, [])
             avg_duration = durations_snapshot.get(phrase.id, 80.0)
-
-            # --- STAGE 1: DURATION RATIO FILTER ---
-            # Elastic 0.50x to 1.75x range covers natural human conversational tempo
-            # (speaking quickly in ~450ms or slowly in ~1200ms) without artificial robot-like pacing.
-            # Discards non-speech transients (< 20 frames / 200ms) and runaway background noise.
-            min_allowed_frames = max(20.0, avg_duration * 0.50)
-            max_allowed_frames = max(min_allowed_frames + 30.0, avg_duration * 1.75)
-
-            if query_frames < min_allowed_frames or query_frames > max_allowed_frames:
-                print(f"[Vistle Engine] Skipped '{phrase.name}': length mismatch (heard {query_frames} vs expected ~{avg_duration:.0f} frames, allowed: {min_allowed_frames:.0f}-{max_allowed_frames:.0f})")
-                continue
-
-            # --- STAGE 2: DTW DISTANCE MATCHING ---
-            distances = [dtw_distance(query_mfcc, tmpl) for tmpl in phrase_templates]
-            min_dist = min(distances) if distances else float('inf')
-
-            effective_threshold = phrase.threshold
-            print(f"[Vistle Engine] Phrase '{phrase.name}' distance: {min_dist:.3f} (thresh: {effective_threshold:.2f}, target: ~{avg_duration:.0f}f)")
-
-            if min_dist < effective_threshold and min_dist < best_distance:
-                best_distance = min_dist
+            result = spot_phrase(query_mfcc, phrase_templates, phrase.threshold, avg_duration)
+            print(
+                f"[Vistle Engine] Phrase '{phrase.name}' {result.reason} "
+                f"distance {result.distance:.3f} (thresh {phrase.threshold:.2f}, "
+                f"enrolled ~{avg_duration:.0f}f, heard {query_frames}f)"
+            )
+            if result.accept and result.distance < best_distance:
+                best_distance = result.distance
                 best_match = phrase
 
-        # --- STAGE 3: FIRE TRIGGER IF CONFIRMED ---
         if best_match is not None:
             with self._lock:
                 self._last_trigger_time = now

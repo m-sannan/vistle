@@ -121,7 +121,7 @@ python test_harness.py
 
 2. **Cadence (do not put the 0.50× length gate back):**
    - People enroll slowly. Refusing anything under half that length is why the phrase only hit when spoken slowly.
-   - `vistle/spotter.py` keeps the saved templates and the saved threshold. Clear matches fire at a natural speed. The old false-accept band (close, but not obvious) has to beat a time-reversed copy of the enrollment. A fast take whose timing features blew up is retried on the enrollment clock.
+   - `vistle/spotter.py` keeps the saved templates and the saved threshold. Fast and slow takes are compared on the enrollment clock, so the same phrase matches at either speed. A different phrase still misses. The slow raw-match path is unchanged.
    - Do not replace this with openWakeWord for custom phrases. That trainer writes audio and needs a fixed vocabulary. DTW stays the few-shot path.
 
 3. **macOS Target Porting:**

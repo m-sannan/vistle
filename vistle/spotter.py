@@ -1,19 +1,13 @@
-"""Few-shot wake spotting that does not require the user to talk slowly.
+"""Few-shot wake spotting for both a fast phrase and a slow one.
 
-People enroll carefully, so those takes are longer than the way they
-actually say the phrase later. The old gate refused anything under half
-that length, which is why a normal "hey wispr" only hit when it was dragged
-out.
+Enrollment is careful, so those takes are long. Matching the live audio
+against that clock makes a quicker "hey wispr" look like a different
+phrase. This puts every utterance on the enrollment length first, then
+asks one question: is it the same speech?
 
-This keeps the same stored templates and the same calibrated threshold.
-It only changes the decision:
-
-1. Clicks and sentences are still refused on length.
-2. A clear match fires at any natural speed.
-3. A close-but-not-obvious match has to beat a time-reversed copy of the
-   enrollment. That is the false-accept region ("sounds a bit like it").
-4. If a fast take looks worse only because the timing features stretched,
-   it is retried after the phrase is placed on the enrollment clock.
+A clear raw match is still accepted, so the slow way that already works
+keeps working. Clicks, long stretches of unrelated speech, and phrases
+that only sound similar are refused.
 """
 
 import numpy as np
@@ -21,23 +15,20 @@ import numpy as np
 from vistle.dtw import dtw_distance
 from vistle.mfcc import MfccExtractor
 
+# Tempo-normalized true phrases cluster under this. Similar-but-wrong
+# phrases stay above it, at a loose saved threshold of 2.5–3.0.
+MATCH_CAP = 2.00
 # A match this far under the saved threshold is the phrase, not a near miss.
-# Capped so a loose 3.0 threshold cannot treat "sort of similar" as obvious.
 CLEAR_FRACTION = 0.78
 CLEAR_CAP = 2.05
 # Near misses must be this much closer to the real takes than to the
 # time-reversed takes, or they are the old "sounds similar" false accept.
 GRAY_REVERSE_MARGIN = 0.65
-# Fast speech is accepted on the enrollment clock only when the normalized
-# distance is decisively inside the threshold, not merely near it.
-FAST_NORM_FRACTION = 0.78
 MIN_FRAMES = 20
-# Below this fraction of the enrolled length, treat the take as fast.
-FAST_FRACTION = 0.55
 # Still refuse coughs that are far shorter than the enrolled phrase.
 MIN_FAST_FRACTION = 0.18
-MAX_SLOW_FRACTION = 2.40
-MAX_FRAMES = 260
+MAX_SLOW_FRACTION = 2.80
+MAX_FRAMES = 340
 
 
 class SpotResult:
@@ -131,37 +122,24 @@ def evaluate(query_mfcc: np.ndarray, templates, threshold: float, avg_frames: fl
         return SpotResult(False, float("inf"), "duration")
 
     raw = _robust_distance(query, bank)
-    if not np.isfinite(raw):
-        return SpotResult(False, raw, "invalid")
+    # Same speech, one clock. A fast take and a slow take of the phrase
+    # land next to each other here. A different phrase does not.
+    norm = _normalized_distance(query, bank)
+    match_bar = min(float(threshold) * 0.82, MATCH_CAP)
+    if np.isfinite(norm) and norm < match_bar:
+        return SpotResult(True, norm, "match")
 
-    short = frames < max(float(MIN_FRAMES), enrolled * FAST_FRACTION)
+    # Slow, careful speech already sits close before any time warp.
+    # Keep that path so a working slow trigger cannot regress.
     clear_bar = min(float(threshold) * CLEAR_FRACTION, CLEAR_CAP)
-    norm_bar = float(threshold) * FAST_NORM_FRACTION
+    if np.isfinite(raw) and raw < clear_bar:
+        return SpotResult(True, raw, "clear")
 
-    def fast_shape_ok() -> bool:
-        # Obvious raw matches skip the extra check. A merely-good short
-        # match must still look like the phrase once tempo is removed,
-        # or a short similar word rides in through the wider window.
-        if raw < float(threshold) * 0.50:
-            return True
-        return _normalized_distance(query, bank) < norm_bar
-
-    if raw < clear_bar:
-        if short and not fast_shape_ok():
-            return SpotResult(False, raw, "fast-shape")
-        return SpotResult(True, raw, "fast" if short else "clear")
-
-    if raw < float(threshold):
+    if np.isfinite(raw) and raw < float(threshold):
         reversed_bank = [np.ascontiguousarray(t[::-1]) for t in bank]
         margin = _robust_distance(query, reversed_bank) - raw
-        if margin <= GRAY_REVERSE_MARGIN:
-            return SpotResult(False, raw, "near-miss")
-        if short and not fast_shape_ok():
-            return SpotResult(False, raw, "fast-shape")
-        return SpotResult(True, raw, "checked")
+        if margin > GRAY_REVERSE_MARGIN and np.isfinite(norm) and norm < match_bar:
+            return SpotResult(True, raw, "checked")
+        return SpotResult(False, raw, "near-miss")
 
-    # Over the saved threshold. Last chance for a fast take whose velocity
-    # features blew up only because it was shorter than enrollment.
-    if short and _normalized_distance(query, bank) < float(threshold) * 0.70:
-        return SpotResult(True, raw, "tempo")
-    return SpotResult(False, raw, "far")
+    return SpotResult(False, raw if np.isfinite(raw) else float("inf"), "far")

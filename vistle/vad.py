@@ -1,4 +1,5 @@
 import numpy as np
+from collections import deque
 from typing import Callable, Optional
 
 class VoiceActivityDetector:
@@ -28,7 +29,7 @@ class VoiceActivityDetector:
         # phrase loses its first consonant otherwise, and then only a slow
         # take still matches enrollment.
         self._preroll_max = int(sample_rate * 0.120)
-        self._preroll = []
+        self._preroll = deque()
         self._preroll_count = 0
 
         self._in_speech = False
@@ -41,14 +42,14 @@ class VoiceActivityDetector:
         self._speech_buffer.clear()
         self._silent_samples_count = 0
         self._total_speech_samples = 0
-        self._preroll = []
+        self._preroll.clear()
         self._preroll_count = 0
 
     def _push_preroll(self, chunk: np.ndarray):
         self._preroll.append(chunk)
         self._preroll_count += len(chunk)
         while self._preroll and (self._preroll_count - len(self._preroll[0])) >= self._preroll_max:
-            self._preroll_count -= len(self._preroll.pop(0))
+            self._preroll_count -= len(self._preroll.popleft())
 
     def process(self, chunk: np.ndarray):
         """Process a chunk of float32 audio samples."""
@@ -62,9 +63,9 @@ class VoiceActivityDetector:
         if not self._in_speech:
             if rms >= self.speech_threshold:
                 self._in_speech = True
-                self._speech_buffer = self._preroll + [chunk]
+                self._speech_buffer = list(self._preroll) + [chunk]
                 self._total_speech_samples = sum(len(c) for c in self._speech_buffer)
-                self._preroll = []
+                self._preroll.clear()
                 self._preroll_count = 0
                 self._silent_samples_count = 0
             else:

@@ -50,7 +50,7 @@ class ActionExecutor:
                     HotkeySender.send(phrase.hotkey_spec)
             elif phrase.action_type == "launch_app":
                 if phrase.app_path:
-                    subprocess.Popen([phrase.app_path], shell=True)
+                    subprocess.Popen([phrase.app_path])
             else:
                 print(f"[Vistle Actions] Unknown action type: {phrase.action_type}")
         except Exception as e:

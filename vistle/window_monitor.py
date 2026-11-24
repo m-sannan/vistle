@@ -124,18 +124,18 @@ class WindowMonitor:
                 title = buff.value.lower()
 
             # Target matching:
-            # Matches if process matches Wispr/Flow or the configured phrase process/title
+            # Matches configured phrase process/title if provided; defaults to Wispr/Flow if unspecified
             matches_process = False
-            if self.process_name and self.process_name in exe_name:
-                matches_process = True
-            elif "wispr" in exe_name or "flow" in exe_name:
-                matches_process = True
+            if self.process_name:
+                matches_process = (self.process_name in exe_name)
+            elif not self.window_title:
+                matches_process = ("wispr" in exe_name or "flow" in exe_name)
 
             matches_title = False
-            if self.window_title and self.window_title in title:
-                matches_title = True
-            elif "wispr" in title or "flow" in title:
-                matches_title = True
+            if self.window_title:
+                matches_title = (self.window_title in title)
+            elif not self.process_name:
+                matches_title = ("wispr" in title or "flow" in title)
 
             if matches_process or matches_title:
                 found = True

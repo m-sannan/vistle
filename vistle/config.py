@@ -77,7 +77,25 @@ class PhraseConfig:
 
     @classmethod
     def from_dict(cls, data):
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        if not isinstance(data, dict):
+            return cls()
+        cleaned = {}
+        for k, v in data.items():
+            if k in cls.__dataclass_fields__:
+                if k == "threshold":
+                    try:
+                        cleaned[k] = float(v)
+                    except (ValueError, TypeError):
+                        cleaned[k] = 2.85
+                elif k == "enabled":
+                    cleaned[k] = bool(v)
+                elif k in ("name", "phrase", "action_type"):
+                    cleaned[k] = str(v) if v is not None else ""
+                elif k in ("hotkey_spec", "app_path", "process_name", "window_title"):
+                    cleaned[k] = str(v) if v is not None else None
+                else:
+                    cleaned[k] = v
+        return cls(**cleaned)
 
 
 @dataclass

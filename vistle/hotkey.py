@@ -98,7 +98,7 @@ class HotkeySender:
         inp.union.ki.wScan = 0
         inp.union.ki.dwFlags = KEYEVENTF_KEYUP if is_up else 0
         inp.union.ki.time = 0
-        inp.union.ki.dwExtraInfo = None
+        inp.union.ki.dwExtraInfo = ctypes.POINTER(ctypes.c_ulong)()
         return inp
 
     @classmethod

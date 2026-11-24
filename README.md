@@ -95,8 +95,13 @@ Verifying PRD items systematically against running system...
 [Ralph Item PRD-14] False positive rejection via duration gating & 39-D trajectory... --> PASSED ✓
 [Ralph Item PRD-15] Full End-to-End Pipeline: Record -> Save -> Reload -> Match... --> PASSED ✓
 [Ralph Item PRD-16] Enrollment Window Complete & Save GUI Flow... --> PASSED ✓
+[Ralph Item PRD-17] Command Injection Immunity in ActionExecutor (subprocess without shell=True)... --> PASSED ✓
+[Ralph Item PRD-18] Config Schema Hardening & Type Sanitization on Malformed JSON... --> PASSED ✓
+[Ralph Item PRD-19] WindowMonitor Custom Target Isolation (Prevents Spurious Overlap)... --> PASSED ✓
+[Ralph Item PRD-20] Spotter Lazy Evaluation Path & High-Efficiency Direct Exit... --> PASSED ✓
+[Ralph Item PRD-21] VAD Deque Pre-Roll Bounded Memory (Zero Memory Leak on Silence)... --> PASSED ✓
 ======================================================================
-RALPH HARNESS COMPLETE: 16/16 PRD ITEMS PASSED
+RALPH HARNESS COMPLETE: 21/21 PRD ITEMS PASSED
 ======================================================================
 ```
 

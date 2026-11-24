@@ -420,6 +420,93 @@ class RalphHarness:
             root.destroy()
         self.check("PRD-16", "Enrollment Window Complete & Save GUI Flow (Headless Simulation)", test_enrollment_gui_flow)
 
+        # PRD-17: Command Injection Immunity in ActionExecutor (No shell=True)
+        def test_command_injection_safety():
+            from unittest.mock import patch
+            executor = ActionExecutor()
+            phrase = PhraseConfig(
+                name="Security Test",
+                phrase="test",
+                action_type="launch_app",
+                app_path="calc.exe & echo vulnerable"
+            )
+            with patch("subprocess.Popen") as mock_popen:
+                executor.execute(phrase)
+                assert mock_popen.called, "subprocess.Popen was not called"
+                args, kwargs = mock_popen.call_args
+                assert kwargs.get("shell") is not True, "SECURITY VULNERABILITY: shell=True was passed to Popen!"
+                assert args[0] == ["calc.exe & echo vulnerable"], "Target path must be passed directly in argument vector"
+            executor.stop()
+        self.check("PRD-17", "Command Injection Immunity in ActionExecutor (subprocess without shell=True)", test_command_injection_safety)
+
+        # PRD-18: Config Input Validation & Graceful Schema Hardening
+        def test_config_schema_hardening():
+            malformed_dict = {
+                "id": "abc123",
+                "name": "Corrupted Phrase",
+                "threshold": "invalid_string_not_a_float",
+                "enabled": "not_a_bool",
+                "action_type": None,
+                "hotkey_spec": None,
+            }
+            p = PhraseConfig.from_dict(malformed_dict)
+            assert isinstance(p.threshold, float), "Threshold must be safely coerced to float"
+            assert p.threshold == 2.85, f"Expected default 2.85 threshold on invalid input, got {p.threshold}"
+            assert p.enabled is True, "Expected bool enabled"
+            assert p.action_type == "", "Expected string action_type"
+            # Test non-dict input
+            p2 = PhraseConfig.from_dict("completely_invalid_non_dict")
+            assert isinstance(p2, PhraseConfig), "Must gracefully return PhraseConfig on non-dict"
+        self.check("PRD-18", "Config Schema Hardening & Type Sanitization on Malformed JSON", test_config_schema_hardening)
+
+        # PRD-19: WindowMonitor Custom Target App Isolation
+        def test_window_monitor_custom_target():
+            wm_custom = WindowMonitor(process_name="custom_ai_agent.exe")
+            assert wm_custom.process_name == "custom_ai_agent.exe"
+            wm_default = WindowMonitor()
+            assert wm_default.process_name is None
+        self.check("PRD-19", "WindowMonitor Custom Target Isolation (Prevents Spurious Overlap)", test_window_monitor_custom_target)
+
+        # PRD-20: Spotter Lazy Evaluation & Latency Optimization
+        def test_spotter_lazy_evaluation():
+            from vistle.spotter import evaluate as spot_eval
+            extractor = MfccExtractor(sample_rate=16000)
+            t = np.linspace(0, 0.8, 12800, endpoint=False, dtype=np.float32)
+            # Dynamic multi-frequency synthetic phoneme sequence
+            wave = np.concatenate([np.sin(2 * np.pi * 400 * t[:6400]), np.sin(2 * np.pi * 1500 * t[6400:])]).astype(np.float32)
+            template = extractor.extract(wave)
+            templates = [template, template, template]
+
+            # Clear match query: should fire fast clear path without error
+            t0 = time.perf_counter()
+            res = spot_eval(template, templates, threshold=2.85, avg_frames=80.0)
+            assert res.accept is True, "Identical template must be accepted"
+            assert res.reason == "clear", f"Clear match must take fast clear path, got {res.reason}"
+
+            # Far mismatched query: should reject immediately
+            far_wave = np.concatenate([np.sin(2 * np.pi * 2400 * t[:6400]), np.sin(2 * np.pi * 500 * t[6400:])]).astype(np.float32)
+            far_mfcc = extractor.extract(far_wave)
+            res_far = spot_eval(far_mfcc, templates, threshold=2.85, avg_frames=80.0)
+            assert res_far.accept is False, "Mismatched frequency trajectory must be rejected"
+            assert res_far.reason in ("far", "near-miss"), f"Expected rejection reason, got {res_far.reason}"
+        self.check("PRD-20", "Spotter Lazy Evaluation Path & High-Efficiency Direct Exit", test_spotter_lazy_evaluation)
+
+        # PRD-21: VAD Deque Pre-Roll Memory Bounding
+        def test_vad_deque_bounded_memory():
+            vad = VoiceActivityDetector(sample_rate=16000)
+            silent_chunk = np.zeros(512, dtype=np.float32)
+            # Feed 100 silent chunks (over 3 seconds of audio)
+            for _ in range(100):
+                vad.process(silent_chunk)
+            # Buffer remains bounded to at most _preroll_max + 1 chunk (chunk discretization)
+            max_allowed = vad._preroll_max + 512
+            assert vad._preroll_count <= max_allowed, f"Pre-roll buffer exceeded max samples: {vad._preroll_count} > {max_allowed}"
+            assert len(vad._preroll) <= 5, f"Deque contained too many chunks: {len(vad._preroll)}"
+            vad.reset()
+            assert vad._preroll_count == 0
+            assert len(vad._preroll) == 0
+        self.check("PRD-21", "VAD Deque Pre-Roll Bounded Memory (Zero Memory Leak on Silence)", test_vad_deque_bounded_memory)
+
         # Summary
         print("\n" + "=" * 70)
         print(f"RALPH HARNESS COMPLETE: {self.passed_count}/{self.passed_count + self.failed_count} PRD ITEMS PASSED")

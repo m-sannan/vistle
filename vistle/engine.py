@@ -57,12 +57,12 @@ class WakeWordEngine:
                     if loaded:
                         # Auto-upgrade any legacy 13-D templates to 39-D dynamic features
                         upgraded = []
-                        for tmpl in loaded:
-                            if tmpl.ndim == 2 and tmpl.shape[1] == 13:
-                                d = MfccExtractor.compute_deltas(tmpl)
+                        for t in loaded:
+                            if t.ndim == 2 and t.shape[1] == 13:
+                                d = MfccExtractor.compute_deltas(t)
                                 dd = MfccExtractor.compute_deltas(d)
-                                tmpl = np.hstack([tmpl, d, dd]).astype(np.float32)
-                            upgraded.append(tmpl)
+                                t = np.hstack([t, d, dd]).astype(np.float32)
+                            upgraded.append(t)
                         self.templates[phrase.id] = upgraded
                         frame_lens = [tmpl.shape[0] for tmpl in upgraded if tmpl.shape[0] > 0]
                         avg_f = float(np.mean(frame_lens)) if frame_lens else 80.0

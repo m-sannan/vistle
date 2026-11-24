@@ -3,6 +3,7 @@ import tkinter as tk
 from PIL import Image, ImageDraw
 import pystray
 from pystray import MenuItem as item
+from vistle import __version__
 from vistle.audio import AudioCapture
 from vistle.config import VistleConfig, PhraseConfig
 from vistle.engine import WakeWordEngine
@@ -134,7 +135,7 @@ class TrayApp:
 
     def _show_about(self, icon, item):
         msg = (
-            "Vistle v0.2.0\n\n"
+            f"Vistle v{__version__}\n\n"
             "Hands-free voice triggers for Windows.\n"
             "100% on-device. Zero audio storage.\n\n"
             "Trigger Wispr Flow or any desktop action with your voice."

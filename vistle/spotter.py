@@ -122,24 +122,34 @@ def evaluate(query_mfcc: np.ndarray, templates, threshold: float, avg_frames: fl
         return SpotResult(False, float("inf"), "duration")
 
     raw = _robust_distance(query, bank)
+    if not np.isfinite(raw):
+        return SpotResult(False, float("inf"), "invalid")
+
+    clear_bar = min(float(threshold) * CLEAR_FRACTION, CLEAR_CAP)
+    match_bar = min(float(threshold) * 0.82, MATCH_CAP)
+
+    # 1. Fast path: Direct clear match (e.g. slow/careful speech or exact match)
+    # Bypasses normalized distance computation completely!
+    if raw < clear_bar:
+        return SpotResult(True, raw, "clear")
+
+    # 2. Direct reject path: If raw distance is overwhelmingly high (> 1.6x threshold),
+    # it is unrelated noise or a vastly different phrase.
+    if raw > float(threshold) * 1.6:
+        return SpotResult(False, raw, "far")
+
+    # 3. Intermediate / fast-speech path: compute normalized distance lazily
     # Same speech, one clock. A fast take and a slow take of the phrase
     # land next to each other here. A different phrase does not.
     norm = _normalized_distance(query, bank)
-    match_bar = min(float(threshold) * 0.82, MATCH_CAP)
     if np.isfinite(norm) and norm < match_bar:
         return SpotResult(True, norm, "match")
 
-    # Slow, careful speech already sits close before any time warp.
-    # Keep that path so a working slow trigger cannot regress.
-    clear_bar = min(float(threshold) * CLEAR_FRACTION, CLEAR_CAP)
-    if np.isfinite(raw) and raw < clear_bar:
-        return SpotResult(True, raw, "clear")
-
-    if np.isfinite(raw) and raw < float(threshold):
+    if raw < float(threshold):
         reversed_bank = [np.ascontiguousarray(t[::-1]) for t in bank]
         margin = _robust_distance(query, reversed_bank) - raw
         if margin > GRAY_REVERSE_MARGIN and np.isfinite(norm) and norm < match_bar:
             return SpotResult(True, raw, "checked")
         return SpotResult(False, raw, "near-miss")
 
-    return SpotResult(False, raw if np.isfinite(raw) else float("inf"), "far")
+    return SpotResult(False, raw, "far")

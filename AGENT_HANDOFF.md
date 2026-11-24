@@ -2,7 +2,7 @@
 
 > **Target Audience:** Principal AI Engineer / Code Reviewer Agent / Systems Auditor  
 > **Date:** November 2026  
-> **Current Version:** v0.2.2  
+> **Current Version:** v0.3.0  
 > **Repository:** Vistle (formerly Whistle)
 
 ---
@@ -96,7 +96,7 @@ Computes normalized dynamic distance between query sequence $Q \in \mathbb{R}^{N
 
 ## 5. Ralph Autonomous Verification Suite (`test_harness.py`)
 
-The codebase contains an automated, non-interactive verification harness (`test_harness.py`) enforcing 16 distinct PRD requirements:
+The codebase contains an automated, non-interactive verification harness (`test_harness.py`) enforcing 21 distinct PRD requirements:
 
 ```bash
 python test_harness.py
@@ -105,10 +105,10 @@ python test_harness.py
 - **PRD-01 to PRD-05:** Thread safety, queue decoupling, MFCC numerical clamping, DTW edge bounds, VAD DC bias subtraction.
 - **PRD-06 to PRD-10:** Energy-based silence trimming, engine pause recovery, self-join thread safety, DPI-safe geometry, action isolation.
 - **PRD-11 to PRD-14:** Atomic file replacement, window monitor dictation guard, config deduplication, 39-D false positive rejection.
-- **PRD-15:** Full End-to-End lifecycle simulation: Recording $\rightarrow$ TemplateStore $\rightarrow$ Config $\rightarrow$ Engine Reload $\rightarrow$ Audio Match $\rightarrow$ Non-target Rejection.
-- **PRD-16:** Headless GUI enrollment and calibration calculation verification.
+- **PRD-15 to PRD-16:** Full End-to-End lifecycle simulation (Recording $\rightarrow$ Matching $\rightarrow$ Action Dispatch) and Headless GUI enrollment.
+- **PRD-17 to PRD-21:** Command injection immunity (subprocess without shell=True), Config schema hardening against corrupted JSON, WindowMonitor custom process isolation, Spotter lazy evaluation latency optimization (< 15ms), and VAD deque pre-roll bounded memory.
 
-*Rule for Incoming Agents:* Any proposed architectural change must pass `python test_harness.py` cleanly before being considered valid.
+*Rule for Incoming Agents:* Any proposed architectural change must pass `python test_harness.py` (21/21) cleanly before being considered valid.
 
 ---
 
